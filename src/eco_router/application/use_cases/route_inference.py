@@ -206,7 +206,9 @@ class RouteInference:
             return None
 
         provider_fault: bool | None = None
-        intent = AttemptIntent(request.context, uuid4().hex, binding, candidate)
+        intent = AttemptIntent(
+            request.context, uuid4().hex, binding, candidate, pricing
+        )
         try:
             try:
                 async with asyncio.timeout_at(deadline):

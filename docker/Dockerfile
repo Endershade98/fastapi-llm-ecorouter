@@ -12,7 +12,8 @@ RUN python -m venv /opt/venv
 COPY requirements.txt requirements-dev.txt ./
 RUN /opt/venv/bin/python -m pip install --no-cache-dir --timeout 60 -r requirements-dev.txt
 
-COPY pyproject.toml Makefile ./
+COPY pyproject.toml Makefile alembic.ini ./
+COPY migrations/ migrations/
 COPY make/ make/
 COPY src/ src/
 COPY tests/ tests/

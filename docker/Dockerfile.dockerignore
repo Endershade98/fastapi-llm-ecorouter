@@ -3,6 +3,9 @@
 !requirements-dev.txt
 !pyproject.toml
 !Makefile
+!alembic.ini
+!migrations/
+!migrations/**
 !make/
 !make/**
 !src/
