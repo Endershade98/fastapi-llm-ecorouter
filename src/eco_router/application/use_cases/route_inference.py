@@ -34,10 +34,13 @@ from eco_router.domain.services.routing import (
     rank_candidates,
 )
 
+_MAX_PROVIDER_CALLS = 2
+
 
 @dataclass(slots=True)
 class _Execution:
     attempts: list[AttemptUsage] = field(default_factory=list)
+    provider_calls: int = 0
     committed_tokens: int = 0
     committed_cost: Fraction = field(default_factory=Fraction)
 
@@ -49,11 +52,7 @@ class _Execution:
             limits.max_cost.amount
         )
 
-    def record(
-        self,
-        candidate: RankedCandidate,
-        attempt: AttemptUsage,
-    ) -> None:
+    def record(self, candidate: RankedCandidate, attempt: AttemptUsage) -> None:
         self.attempts.append(attempt)
         if attempt.source in (UsageSource.UNKNOWN, UsageSource.ESTIMATED):
             self.committed_tokens += _token_count(candidate.maximum_usage)
@@ -115,14 +114,13 @@ class RouteInference:
             if model.pricing is not None
         }
         budget_blocked = False
-        models_dispatched = 0
 
         for candidate in routing.ranked:
-            # A model skipped before dispatch does not consume a fallback slot.
-            retries = 1 if models_dispatched == 0 else 0
-            dispatched_on_model = False
+            remaining_calls = _MAX_PROVIDER_CALLS - execution.provider_calls
+            if remaining_calls == 0:
+                break
 
-            for _ in range(retries + 1):
+            for _ in range(remaining_calls):
                 if loop.time() >= request.limits.deadline:
                     return self._result(
                         request, routing, execution, ExecutionStatus.DEADLINE_EXCEEDED
@@ -140,10 +138,6 @@ class RouteInference:
                 )
                 if outcome is None:
                     break
-
-                if not dispatched_on_model:
-                    models_dispatched += 1
-                    dispatched_on_model = True
 
                 if (
                     execution.committed_tokens > request.limits.max_tokens
@@ -176,14 +170,13 @@ class RouteInference:
                 if outcome.kind is not ProviderOutcomeKind.TRANSIENT_REJECTED:
                     break
 
-            if models_dispatched == 2:
-                break
-
         if loop.time() >= request.limits.deadline:
             status = ExecutionStatus.DEADLINE_EXCEEDED
+        elif execution.provider_calls == _MAX_PROVIDER_CALLS:
+            status = ExecutionStatus.ATTEMPTS_EXHAUSTED
         elif budget_blocked:
             status = ExecutionStatus.BUDGET_EXCEEDED
-        elif models_dispatched:
+        elif execution.provider_calls:
             status = ExecutionStatus.ATTEMPTS_EXHAUSTED
         else:
             status = ExecutionStatus.NO_ADMISSIBLE_ATTEMPT
@@ -239,6 +232,7 @@ class RouteInference:
             )
             try:
                 async with asyncio.timeout_at(attempt_deadline):
+                    execution.provider_calls += 1
                     outcome = await self._provider.generate(call)
             except TimeoutError:
                 outcome = ProviderOutcome(
