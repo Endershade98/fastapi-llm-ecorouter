@@ -17,3 +17,4 @@ build/
 .DS_Store
 
 docs/roadmap.md
+coverage.xml

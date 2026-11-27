@@ -1,0 +1,14 @@
+**
+!requirements.txt
+!requirements-dev.txt
+!pyproject.toml
+!Makefile
+!make/
+!make/**
+!src/
+!src/**
+!tests/
+!tests/**
+**/__pycache__/
+**/*.pyc
+**/*.egg-info/
