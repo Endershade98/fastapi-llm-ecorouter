@@ -4,9 +4,9 @@ EcoRouter selects an LLM for a request using eligibility, quality, cost and late
 constraints. It coordinates inference attempts within token, cost and deadline limits
 and accounts for usage across retries and fallback.
 
-The current implementation contains the domain and application layers. You can
-exercise both through the test suite with scripted providers and ledgers. The
-infrastructure and API directories are placeholders for the next increments.
+The current implementation includes domain routing and accounting, application
+orchestration, a deterministic mock provider and a PostgreSQL attempt ledger.
+The next increment connects these components to the API.
 
 ## Run the checks
 
@@ -20,8 +20,8 @@ docker compose -f docker/compose.yaml run --build --rm quality
 
 This builds a Linux Python 3.12 environment and runs Ruff lint and format checks,
 strict mypy and pytest. The same command works on Linux, macOS and Windows hosts
-configured to run Linux containers. The test suite uses no provider credentials
-or database.
+configured to run Linux containers. The default suite runs without provider credentials or a database. For the
+PostgreSQL integration tests, follow the [verification guide](docs/testing/verification.md).
 
 ### Local development
 

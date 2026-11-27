@@ -19,3 +19,24 @@ to the Make commands.
 
 Review audit output before sharing it. The report includes the contents of the
 listed setup files and README.
+
+## PostgreSQL integration
+
+The ledger integration tests create a temporary schema, apply the Alembic
+migration and exercise the adapter against PostgreSQL. Use the dedicated
+Compose test database with its local test credentials.
+
+```sh
+docker compose -p ecorouter -f docker/compose.yaml up -d --wait postgres
+docker compose -p ecorouter -f docker/compose.yaml run --build --rm \
+  -e ECOROUTER_TEST_DATABASE_URL=postgresql://ecorouter:ecorouter-test@postgres/ecorouter \
+  quality make test-integration
+docker compose -p ecorouter -f docker/compose.yaml --profile integration down
+```
+
+For an existing development database, set `ECOROUTER_DATABASE_URL` and run
+`.venv/bin/alembic upgrade head` from the repository root. The application
+obtains a bounded async connection pool through `postgres_pool`. Usage
+summaries group attempts by tenant, mode and the UTC time of intent creation.
+The ledger emits OpenTelemetry spans when the host configures an SDK and
+exporter.

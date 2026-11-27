@@ -5,6 +5,7 @@ from math import isfinite
 from eco_router.domain.models import (
     CatalogSnapshot,
     Money,
+    PricingSnapshot,
     TokenUsage,
     require_identifier,
     require_non_negative_decimal,
@@ -164,6 +165,7 @@ class AttemptIntent:
     attempt_id: str
     binding: ModelBinding
     candidate: RankedCandidate
+    pricing: PricingSnapshot
 
 
 @dataclass(frozen=True, slots=True)
